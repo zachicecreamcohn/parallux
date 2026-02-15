@@ -1,5 +1,3 @@
-// just to demonstrate how to do a backend connection
-import { setupDemoHandlers } from './demo';
 import { setupStoreHandlers } from './store';
 
 /**
@@ -9,9 +7,8 @@ import { setupStoreHandlers } from './store';
 export function registerApi() {
   console.log('Initializing API Registry...');
 
-  setupDemoHandlers();
-
   setupStoreHandlers();
+
 
   console.log('✅ API Registry initialized.');
 }

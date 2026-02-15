@@ -1,17 +1,13 @@
-import { ProjectData } from "@shared/interfaces";
-import { SystemInfo } from "./api/demo";
+import { ProjectData, StoreUpdateEvent } from "./shared/interfaces";
 
 export interface IApi {
-  demo: {
-    getSystemInfo: () => Promise<SystemInfo>
-    echo: (message: string) => Promise<string>
-  },
-
   store: {
-    get: (key: keyof ProjectData)  => Promise<any>
-    set: (key: keyof ProjectData)  => Promise<any>
-    getAll: () => Promise<any>
-  }
+    get: <K extends keyof ProjectData>(key: K) => Promise<ProjectData[K]>;
+    set: <K extends keyof ProjectData>(key: K, val: ProjectData[K]) => Promise<void>;
+    delete: (key: keyof ProjectData) => Promise<void>;
+    getAll: () => Promise<ProjectData>;
+    onUpdate: (callback: (update: StoreUpdateEvent) => void) => () => void;
+  };
 }
 
 declare global {
