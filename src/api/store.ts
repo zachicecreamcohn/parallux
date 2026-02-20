@@ -11,6 +11,14 @@ const storeSchema: Schema<ProjectData> = {
   patch: {
     type: 'object',
     default: {}
+  },
+  stageSize: {
+    type: 'object',
+    default: {}
+  },
+  gridOverlay: {
+    type: 'object',
+    default: {}
   }
 }
 

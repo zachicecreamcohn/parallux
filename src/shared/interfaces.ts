@@ -1,3 +1,18 @@
+export interface StageSize {
+  widthFeet: number;
+  widthInches: number;
+  heightFeet: number;
+  heightInches: number;
+}
+
+export type Point = { x: number; y: number };
+
+export interface GridOverlay {
+  topLeft: Point;
+  topRight: Point;
+  bottomLeft: Point;
+  bottomRight: Point;
+}
 export type SizeMode = 'iris' | 'zoom';
 
 export interface FixturePatch {
@@ -17,9 +32,11 @@ export type PatchData = Record<string, FixturePatch>;
 export interface ProjectData {
   projectName: string;
   patch: PatchData;
+  stageSize?: StageSize;
+  gridOverlay?: GridOverlay;
 }
 
-export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch'];
+export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch', 'stageSize', 'gridOverlay'];
 
 export type StoreUpdateEvent = {
   [K in keyof ProjectData]: { key: K; value: ProjectData[K] }
