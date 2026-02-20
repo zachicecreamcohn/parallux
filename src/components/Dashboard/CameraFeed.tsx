@@ -30,6 +30,10 @@ export default function CameraFeed({ stageSize }: Props) {
 
   const draggingCorner = useRef<keyof GridOverlay | null>(null);
   const pendingCorners = useRef<GridOverlay | null>(null);
+  const [selectedCorner, setSelectedCorner] = useState<keyof GridOverlay | null>(null);
+  // Keep selectedCorner accessible in keydown handler without stale closure
+  const selectedCornerRef = useRef<keyof GridOverlay | null>(null);
+  selectedCornerRef.current = selectedCorner;
 
   useEffect(() => {
     if (cameras.length > 0 && !selectedDeviceId) {
@@ -68,8 +72,8 @@ export default function CameraFeed({ stageSize }: Props) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const { cols, rows } = gridDivisions(stageSize);
-    drawGrid(ctx, getCorners(), videoDims.w, videoDims.h, cols, rows);
-  }, [gridOverlay, videoDims, stageSize]);
+    drawGrid(ctx, getCorners(), videoDims.w, videoDims.h, cols, rows, selectedCorner);
+  }, [gridOverlay, videoDims, stageSize, selectedCorner]);
 
   const canvasCoords = (e: React.MouseEvent<HTMLCanvasElement>): [number, number] => {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -80,7 +84,9 @@ export default function CameraFeed({ stageSize }: Props) {
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const [ex, ey] = canvasCoords(e);
-    draggingCorner.current = hitTestCorner(ex, ey, getCorners(), videoDims.w, videoDims.h);
+    const hit = hitTestCorner(ex, ey, getCorners(), videoDims.w, videoDims.h);
+    draggingCorner.current = hit;
+    setSelectedCorner(hit);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -94,10 +100,43 @@ export default function CameraFeed({ stageSize }: Props) {
     const updated: GridOverlay = { ...getCorners(), [draggingCorner.current]: newPoint };
     const ctx = canvasRef.current?.getContext('2d');
     const { cols, rows } = gridDivisions(stageSize);
-    if (ctx) drawGrid(ctx, updated, w, h, cols, rows);
+    if (ctx) drawGrid(ctx, updated, w, h, cols, rows, draggingCorner.current);
     pendingCorners.current = updated;
   };
 
+  // Keyboard nudge — 1px step at normal speed, 10px with Shift
+  useEffect(() => {
+    const STEP = 1;
+    const BIG_STEP = 10;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const corner = selectedCornerRef.current;
+      if (!corner) return;
+      const dirs: Record<string, [number, number]> = {
+        ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+      };
+      if (!dirs[e.key]) return;
+      e.preventDefault();
+      const step = (e.shiftKey ? BIG_STEP : STEP) / videoDims.w;
+      const [dx, dy] = dirs[e.key];
+      const corners = pendingCorners.current ?? getCorners();
+      const p = corners[corner];
+      const updated: GridOverlay = {
+        ...corners,
+        [corner]: {
+          x: Math.max(0, Math.min(1, p.x + dx * step)),
+          y: Math.max(0, Math.min(1, p.y + dy * step * (videoDims.w / videoDims.h))),
+        },
+      };
+      pendingCorners.current = updated;
+      const ctx = canvasRef.current?.getContext('2d');
+      const { cols, rows } = gridDivisions(stageSize);
+      if (ctx) drawGrid(ctx, updated, videoDims.w, videoDims.h, cols, rows, corner);
+      setGridOverlay(updated);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [videoDims, stageSize, gridOverlay]);
   const handleMouseUp = () => {
     if (draggingCorner.current && pendingCorners.current) {
       setGridOverlay(pendingCorners.current);

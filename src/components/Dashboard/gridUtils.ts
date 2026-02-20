@@ -52,6 +52,7 @@ export function drawGrid(
   corners: GridOverlay,
   w: number, h: number,
   cols: number, rows: number,
+  selectedCorner?: keyof GridOverlay | null,
 ) {
   const { topLeft: tl, topRight: tr, bottomLeft: bl, bottomRight: br } = corners;
   ctx.clearRect(0, 0, w, h);
@@ -78,12 +79,23 @@ export function drawGrid(
   }
   ctx.stroke();
 
-  ctx.fillStyle = 'rgba(0,255,120,1)';
-  for (const p of [tl, tr, bl, br]) {
+  const cornerEntries: [keyof GridOverlay, Point][] = [
+    ['topLeft', tl], ['topRight', tr], ['bottomLeft', bl], ['bottomRight', br],
+  ];
+  for (const [key, p] of cornerEntries) {
     const [cx, cy] = toCanvas(p, w, h);
+    const isSelected = key === selectedCorner;
     ctx.beginPath();
-    ctx.arc(cx, cy, HANDLE_RADIUS, 0, Math.PI * 2);
+    ctx.arc(cx, cy, isSelected ? HANDLE_RADIUS * 1.5 : HANDLE_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,255,120,1)';
     ctx.fill();
+    if (isSelected) {
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,255,120,0.85)';
+      ctx.lineWidth = 1.5;
+    }
   }
 }
 
