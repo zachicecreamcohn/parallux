@@ -7,6 +7,10 @@ const storeSchema: Schema<ProjectData> = {
   projectName: {
     type: 'string',
     default: 'Parallux Show'
+  },
+  patch: {
+    type: 'object',
+    default: {}
   }
 }
 
@@ -26,7 +30,7 @@ export const setupStoreHandlers = () => {
       throw new Error(`Invalid key: ${key}`);
     }
 
-    if (!value) throw new Error(`Value cannot be empty`);
+    if (value === undefined || value === null) throw new Error(`Value cannot be empty`);
 
     store.set(key, value);
   });
