@@ -3,6 +3,7 @@ export interface StageSize {
   widthInches: number;
   heightFeet: number;
   heightInches: number;
+  gridSpacingFt: number;
 }
 
 export type Point = { x: number; y: number };
