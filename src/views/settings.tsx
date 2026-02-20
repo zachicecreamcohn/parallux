@@ -1,4 +1,5 @@
 import Patch from "../components/Patch/Patch";
+
 import { useStore } from "../context/StoreContext";
 
 export default function Settings() {
@@ -17,6 +18,7 @@ export default function Settings() {
       />
 
       <Patch />
+
 
     </>
   )

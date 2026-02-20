@@ -21,6 +21,7 @@ export function registerApi(win: BrowserWindow): void {
   setupControlHandlers(engine);
   engine.start();
 
+
   app.on('before-quit', () => {
     engine?.stop();
     engine = null;

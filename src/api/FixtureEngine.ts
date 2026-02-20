@@ -1,9 +1,10 @@
 import { PatchData, GamepadState, FixtureState, CrosshairPosition } from '../shared/interfaces';
 import { SacnSender } from './SacnSender';
 
+
 const TICK_MS = 25;
 const DELTA_SCALE = 0.005;
-const DPAD_STEP = 0.002;
+const DPAD_STEP = 0.05;
 const CLUTCH_THRESHOLD = 0.1;
 const KILL_THRESHOLD = 0.1;
 const SACN_PRIORITY = 150;
@@ -36,14 +37,14 @@ function clamp(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-function writeChannels(buf: Buffer, baseAddress: number, channels: number[], norm: number): void {
+function writePayload(payload: { [channel: number]: number }, baseAddress: number, channels: number[], norm: number): void {
   if (channels.length === 0) return;
   const value16 = Math.round(norm * 65535);
   const coarse = (value16 >> 8) & 0xff;
   const fine = value16 & 0xff;
-  buf[baseAddress + channels[0] - 1] = coarse;
+  payload[baseAddress + channels[0]] = coarse;
   if (channels[1] !== undefined) {
-    buf[baseAddress + channels[1] - 1] = fine;
+    payload[baseAddress + channels[1]] = fine;
   }
 }
 
@@ -54,6 +55,7 @@ export class FixtureEngine {
   private wasKilled = false;
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private readonly sacnSender: SacnSender;
+
   private readonly onCrosshair: (pos: CrosshairPosition) => void;
 
   constructor(patch: PatchData, onCrosshair: (pos: CrosshairPosition) => void) {
@@ -78,6 +80,7 @@ export class FixtureEngine {
     this.lastGamepadState = state;
   }
 
+
   start(): void {
     if (this.intervalId !== null) return;
     this.intervalId = setInterval(() => this.tick(), TICK_MS);
@@ -88,6 +91,7 @@ export class FixtureEngine {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+
     this.sacnSender.destroy();
   }
 
@@ -133,29 +137,30 @@ export class FixtureEngine {
       this.onCrosshair({ x: meanPan, y: meanTilt });
     }
 
-    const universeBuffers = new Map<number, Buffer>();
+    const universePayloads = new Map<number, { [channel: number]: number }>();
 
     for (const [id, state] of this.states) {
       const fixture = this.patch[id];
       if (!fixture) continue;
 
       const { DMXUniverse, DMXAddress } = fixture;
-      if (!universeBuffers.has(DMXUniverse)) {
-        universeBuffers.set(DMXUniverse, Buffer.alloc(512, 0));
+      const base = DMXAddress - 1;
+      if (!universePayloads.has(DMXUniverse)) {
+        universePayloads.set(DMXUniverse, {});
       }
-      const buf = universeBuffers.get(DMXUniverse);
-      if (!buf) continue;
+      const payload = universePayloads.get(DMXUniverse);
+      if (!payload) continue;
 
-      writeChannels(buf, base, fixture.panChannels, state.panNorm);
-      writeChannels(buf, base, fixture.tiltChannels, state.tiltNorm);
+      writePayload(payload, base, fixture.panChannels, state.panNorm);
+      writePayload(payload, base, fixture.tiltChannels, state.tiltNorm);
 
       const sizeChannels = fixture.sizeMode === 'zoom' ? fixture.zoomChannels : fixture.irisChannels;
-      writeChannels(buf, base, sizeChannels, state.zoomNorm);
+      writePayload(payload, base, sizeChannels, state.zoomNorm);
 
       const outputIntensity = gp.l2 >= KILL_THRESHOLD ? 0 : state.intensity;
-      writeChannels(buf, base, fixture.intensityChannels, outputIntensity);
+      writePayload(payload, base, fixture.intensityChannels, outputIntensity);
     }
 
-    this.sacnSender.send(universeBuffers);
+    this.sacnSender.send(universePayloads);
   }
 }

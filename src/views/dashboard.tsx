@@ -47,17 +47,10 @@ export default function Dashboard() {
 
       window.api.control.sendGamepadState(state);
 
-      if (gp) {
-        console.log('[gamepad]', {
-          axes: [...gp.axes].map((v) => +v.toFixed(3)),
-          buttons: [...gp.buttons].map((b, i) => b.pressed || b.value > 0.05 ? `${i}:${b.value.toFixed(2)}` : null).filter(Boolean),
-        });
-      }
-    };
+    }
 
     rafRef.current = requestAnimationFrame(loop);
     const unsub = window.api.control.onCrosshair((pos) => {
-      console.log('[crosshair]', pos);
       setCrosshair(pos);
     });
 

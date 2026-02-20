@@ -18,7 +18,9 @@ const storeSchema: Schema<ProjectData> = {
   gridOverlay: {
     type: 'object',
     default: {}
-  }
+  },
+
+
 }
 
 const store = new Store<ProjectData>({ schema: storeSchema});

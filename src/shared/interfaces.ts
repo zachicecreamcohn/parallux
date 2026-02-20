@@ -35,6 +35,8 @@ export interface ProjectData {
   patch: PatchData;
   stageSize?: StageSize;
   gridOverlay?: GridOverlay;
+
+
 }
 
 export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch', 'stageSize', 'gridOverlay'];
