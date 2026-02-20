@@ -1,4 +1,4 @@
-import { ProjectData, StoreUpdateEvent } from "./shared/interfaces";
+import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition } from "./shared/interfaces";
 
 export interface IApi {
   store: {
@@ -7,6 +7,10 @@ export interface IApi {
     delete: (key: keyof ProjectData) => Promise<void>;
     getAll: () => Promise<ProjectData>;
     onUpdate: (callback: (update: StoreUpdateEvent) => void) => () => void;
+  };
+  control: {
+    sendGamepadState: (state: GamepadState) => void;
+    onCrosshair: (cb: (pos: CrosshairPosition) => void) => () => void;
   };
 }
 

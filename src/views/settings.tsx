@@ -3,7 +3,7 @@ import { useStore } from "../context/StoreContext";
 
 export default function Settings() {
 
-  const [projectName, setProjectName, reset] = useStore('projectName');
+  const [projectName, setProjectName] = useStore('projectName');
 
   return (
     <>

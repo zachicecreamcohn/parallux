@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Select, Text } from '@mantine/core';
-import { GridOverlay, Point, StageSize } from '../../shared/interfaces';
+import { CrosshairPosition, GridOverlay, Point, StageSize } from '../../shared/interfaces';
 import { useStore } from '../../context/StoreContext';
 import { defaultCorners, drawGrid, gridDivisions, hitTestCorner } from './gridUtils';
 
@@ -16,12 +16,14 @@ function useCameras() {
 
 interface Props {
   stageSize: StageSize;
+  crosshair?: CrosshairPosition;
 }
 
-export default function CameraFeed({ stageSize }: Props) {
+export default function CameraFeed({ stageSize, crosshair }: Props) {
   const cameras = useCameras();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const crosshairCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [videoDims, setVideoDims] = useState({ w: 640, h: 480 });
@@ -75,8 +77,40 @@ export default function CameraFeed({ stageSize }: Props) {
     drawGrid(ctx, getCorners(), videoDims.w, videoDims.h, cols, rows, selectedCorner);
   }, [gridOverlay, videoDims, stageSize, selectedCorner]);
 
+  useEffect(() => {
+    const canvas = crosshairCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!crosshair) return;
+    const cx = crosshair.x * videoDims.w;
+    const cy = crosshair.y * videoDims.h;
+    const R = 12;
+    const L = 20;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - L, cy);
+    ctx.lineTo(cx + L, cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - L);
+    ctx.lineTo(cx, cy + L);
+    ctx.stroke();
+    ctx.restore();
+  }, [crosshair, videoDims]);
+
   const canvasCoords = (e: React.MouseEvent<HTMLCanvasElement>): [number, number] => {
-    const rect = canvasRef.current!.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    if (!canvas) return [0, 0];
+    const rect = canvas.getBoundingClientRect();
     const scaleX = videoDims.w / rect.width;
     const scaleY = videoDims.h / rect.height;
     return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
@@ -186,6 +220,17 @@ export default function CameraFeed({ stageSize }: Props) {
             top: 0, left: 0,
             width: '100%', height: '100%',
             cursor: 'crosshair',
+          }}
+        />
+        <canvas
+          ref={crosshairCanvasRef}
+          width={videoDims.w}
+          height={videoDims.h}
+          style={{
+            position: 'absolute',
+            top: 0, left: 0,
+            width: '100%', height: '100%',
+            pointerEvents: 'none',
           }}
         />
       </div>

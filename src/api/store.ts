@@ -1,7 +1,6 @@
-import { ipcMain } from "electron";
+import { ipcMain, BrowserWindow } from "electron";
 import Store, { Schema } from 'electron-store';
 import { ProjectData, ProjectDataKeys } from "../shared/interfaces";
-import { BrowserWindow } from "electron";
 
 const storeSchema: Schema<ProjectData> = {
   projectName: {
@@ -25,6 +24,13 @@ const storeSchema: Schema<ProjectData> = {
 const store = new Store<ProjectData>({ schema: storeSchema});
 
 
+export function getStoreValue<K extends keyof ProjectData>(key: K): ProjectData[K] {
+  return store.get(key);
+}
+
+export function onStoreChange<K extends keyof ProjectData>(key: K, cb: (val: ProjectData[K]) => void): void {
+  store.onDidChange(key, (newValue) => cb(newValue as ProjectData[K]));
+}
 export const setupStoreHandlers = () => {
   ipcMain.handle('store:get', (_event, key: keyof ProjectData) => {
     if (!ProjectDataKeys.includes(key)) {
@@ -33,7 +39,7 @@ export const setupStoreHandlers = () => {
     return store.get(key);
   });
 
-  ipcMain.handle('store:set', (_event, key: keyof ProjectData, value: any) => {
+  ipcMain.handle('store:set', (_event, key: keyof ProjectData, value: unknown) => {
     if (!ProjectDataKeys.includes(key)) {
       throw new Error(`Invalid key: ${key}`);
     }

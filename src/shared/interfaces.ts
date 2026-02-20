@@ -42,3 +42,28 @@ export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch', '
 export type StoreUpdateEvent = {
   [K in keyof ProjectData]: { key: K; value: ProjectData[K] }
 }[keyof ProjectData];
+
+export interface GamepadState {
+  rightStickX: number;
+  rightStickY: number;
+  leftStickY: number;
+  r2: number;
+  l2: number;
+  dpadUp: boolean;
+  dpadDown: boolean;
+  aButton: boolean;
+  bButton: boolean;
+}
+
+export interface FixtureState {
+  panNorm: number;
+  tiltNorm: number;
+  zoomNorm: number;
+  intensity: number;
+  preKillIntensity: number;
+}
+
+export interface CrosshairPosition {
+  x: number;
+  y: number;
+}

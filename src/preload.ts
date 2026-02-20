@@ -2,7 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 
-import { ProjectData, StoreUpdateEvent } from '@shared/interfaces';
+import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition } from '@shared/interfaces';
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
@@ -20,5 +20,13 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.on('store:update', subscription);
       return () => ipcRenderer.removeListener('store:update', subscription);
     }
+  },
+  control: {
+    sendGamepadState: (state: GamepadState) => ipcRenderer.send('control:gamepadState', state),
+    onCrosshair: (cb: (pos: CrosshairPosition) => void) => {
+      const subscription = (_event: any, pos: CrosshairPosition) => cb(pos);
+      ipcRenderer.on('control:crosshair', subscription);
+      return () => ipcRenderer.removeListener('control:crosshair', subscription);
+    },
   }
 });
