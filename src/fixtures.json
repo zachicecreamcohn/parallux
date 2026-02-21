@@ -25,7 +25,7 @@
           { "offset": 14, "role": "blue-fine",   "label": "Blue Fine",      "defaultValue": 0,   "standaloneValue": 0 },
           { "offset": 15, "role": "white",       "label": "White",          "defaultValue": 0,   "standaloneValue": 255 },
           { "offset": 16, "role": "white-fine",  "label": "White Fine",     "defaultValue": 0,   "standaloneValue": 0 },
-          { "offset": 17, "role": "other",       "label": "Color Macro",    "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 17, "role": "other",       "label": "Color",    "defaultValue": 0,   "standaloneValue": 0 },
           { "offset": 18, "role": "other",       "label": "Zone",           "defaultValue": 0,   "standaloneValue": 0 },
           { "offset": 19, "role": "other",       "label": "Programs",       "defaultValue": 0,   "standaloneValue": 0 },
           { "offset": 20, "role": "other",       "label": "Auto Speed",     "defaultValue": 0,   "standaloneValue": 0 },
