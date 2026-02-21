@@ -62,7 +62,7 @@ export interface FixtureState {
   tiltNorm: number;
   zoomNorm: number;
   intensity: number;
-  preKillIntensity: number;
+
 }
 
 export interface CrosshairPosition {

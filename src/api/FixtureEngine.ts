@@ -6,7 +6,7 @@ const TICK_MS = 25;
 const DELTA_SCALE = 0.005;
 const DPAD_STEP = 0.05;
 const CLUTCH_THRESHOLD = 0.1;
-const KILL_THRESHOLD = 0.1;
+
 const SACN_PRIORITY = 150;
 
 const DEFAULT_STATE: FixtureState = {
@@ -14,7 +14,7 @@ const DEFAULT_STATE: FixtureState = {
   tiltNorm: 0.5,
   zoomNorm: 0.5,
   intensity: 1.0,
-  preKillIntensity: 1.0,
+
 };
 
 const DEFAULT_GAMEPAD: GamepadState = {
@@ -52,7 +52,7 @@ export class FixtureEngine {
   private states = new Map<string, FixtureState>();
   private patch: PatchData;
   private lastGamepadState: GamepadState = { ...DEFAULT_GAMEPAD };
-  private wasKilled = false;
+
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private readonly sacnSender: SacnSender;
 
@@ -115,17 +115,6 @@ export class FixtureEngine {
         state.intensity = clamp(state.intensity - DPAD_STEP);
       }
 
-      if (gp.l2 >= KILL_THRESHOLD) {
-        if (!this.wasKilled) {
-          state.preKillIntensity = state.intensity;
-          this.wasKilled = true;
-        }
-      } else {
-        if (this.wasKilled) {
-          state.intensity = state.preKillIntensity;
-          this.wasKilled = false;
-        }
-      }
 
       this.states.set(id, state);
     }
@@ -157,7 +146,7 @@ export class FixtureEngine {
       const sizeChannels = fixture.sizeMode === 'zoom' ? fixture.zoomChannels : fixture.irisChannels;
       writePayload(payload, base, sizeChannels, state.zoomNorm);
 
-      const outputIntensity = gp.l2 >= KILL_THRESHOLD ? 0 : state.intensity;
+      const outputIntensity = state.intensity * (1 - gp.l2);
       writePayload(payload, base, fixture.intensityChannels, outputIntensity);
     }
 
