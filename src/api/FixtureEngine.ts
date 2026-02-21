@@ -4,7 +4,7 @@ import { SacnSender } from './SacnSender';
 
 const TICK_MS = 25;
 const DELTA_SCALE = 0.005;
-const DPAD_STEP = 0.05;
+const DPAD_STEP = 0.031
 const CLUTCH_THRESHOLD = 0.1;
 
 const SACN_PRIORITY = 150;
@@ -99,11 +99,14 @@ export class FixtureEngine {
     const gp = this.lastGamepadState;
 
     for (const [id, state] of this.states) {
-      if (gp.r2 >= CLUTCH_THRESHOLD) {
-        state.panNorm = clamp(state.panNorm + curve(gp.rightStickX) * DELTA_SCALE);
-        state.tiltNorm = clamp(state.tiltNorm + curve(gp.rightStickY) * DELTA_SCALE);
-        state.zoomNorm = clamp(state.zoomNorm + curve(gp.leftStickY) * DELTA_SCALE);
+      if (gp.r2 < CLUTCH_THRESHOLD) {
+        this.states.set(id, state);
+        continue;
       }
+
+      state.panNorm = clamp(state.panNorm + curve(gp.rightStickX) * DELTA_SCALE);
+      state.tiltNorm = clamp(state.tiltNorm + curve(gp.rightStickY) * DELTA_SCALE);
+      state.zoomNorm = clamp(state.zoomNorm + curve(gp.leftStickY) * DELTA_SCALE);
 
       if (gp.aButton) {
         state.intensity = 1.0;
@@ -114,7 +117,6 @@ export class FixtureEngine {
       } else if (gp.dpadDown) {
         state.intensity = clamp(state.intensity - DPAD_STEP);
       }
-
 
       this.states.set(id, state);
     }
