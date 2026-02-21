@@ -14,18 +14,51 @@ export interface GridOverlay {
   bottomLeft: Point;
   bottomRight: Point;
 }
-export type SizeMode = 'iris' | 'zoom';
+export type FixtureChannelRole =
+  | 'pan' | 'pan-fine'
+  | 'tilt' | 'tilt-fine'
+  | 'dimmer' | 'dimmer-fine'
+  | 'shutter'
+  | 'zoom' | 'zoom-fine'
+  | 'red' | 'red-fine'
+  | 'green' | 'green-fine'
+  | 'blue' | 'blue-fine'
+  | 'white' | 'white-fine'
+  | 'iris' | 'iris-fine'
+  | 'other';
+
+export interface FixtureChannelDef {
+  offset: number;
+  role: FixtureChannelRole;
+  label: string;
+  defaultValue: number;
+  standaloneValue: number;
+  notes?: string;
+}
+
+export interface FixtureModeDef {
+  channelCount: number;
+  channels: FixtureChannelDef[];
+}
+
+export interface FixtureProfileDef {
+  manufacturer: string;
+  model: string;
+  type: string;
+  panRangeDegrees: number;
+  tiltRangeDegrees: number;
+  modes: Record<string, FixtureModeDef>;
+}
+
+export type FixtureLibrary = Record<string, FixtureProfileDef>;
 
 export interface FixturePatch {
   channel: number;
   DMXUniverse: number;
   DMXAddress: number;
-  panChannels: number[];
-  tiltChannels: number[];
-  zoomChannels: number[];
-  irisChannels: number[];
-  intensityChannels: number[];
-  sizeMode: SizeMode;
+  fixtureTypeId: string;
+  modeId: string;
+  standalone: boolean;
 }
 
 export type PatchData = Record<string, FixturePatch>;
