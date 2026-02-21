@@ -1,4 +1,4 @@
-import { PatchData, GamepadState, FixtureState, CrosshairPosition } from '../shared/interfaces';
+import { PatchData, GamepadState, FixtureState, CrosshairPosition, FixtureLibrary, FixtureChannelDef, FixtureChannelRole } from '../shared/interfaces';
 import { SacnSender } from './SacnSender';
 
 
@@ -37,20 +37,25 @@ function clamp(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-function writePayload(payload: { [channel: number]: number }, baseAddress: number, channels: number[], norm: number): void {
-  if (channels.length === 0) return;
+const MOTION_ROLES: FixtureChannelRole[] = ['pan', 'pan-fine', 'tilt', 'tilt-fine', 'zoom', 'zoom-fine', 'iris', 'iris-fine', 'dimmer', 'dimmer-fine'];
+
+function findChannel(channels: FixtureChannelDef[], role: FixtureChannelRole): FixtureChannelDef | undefined {
+  return channels.find(c => c.role === role);
+}
+
+function writeChannel(payload: { [channel: number]: number }, base: number, ch: FixtureChannelDef | undefined, fineCh: FixtureChannelDef | undefined, norm: number): void {
+  if (!ch) return;
   const value16 = Math.round(norm * 65535);
-  const coarse = (value16 >> 8) & 0xff;
-  const fine = value16 & 0xff;
-  payload[baseAddress + channels[0]] = coarse;
-  if (channels[1] !== undefined) {
-    payload[baseAddress + channels[1]] = fine;
+  payload[base + ch.offset - 1] = (value16 >> 8) & 0xff;
+  if (fineCh) {
+    payload[base + fineCh.offset - 1] = value16 & 0xff;
   }
 }
 
 export class FixtureEngine {
   private states = new Map<string, FixtureState>();
   private patch: PatchData;
+  private fixtureLibrary: FixtureLibrary;
   private lastGamepadState: GamepadState = { ...DEFAULT_GAMEPAD };
 
   private intervalId: ReturnType<typeof setInterval> | null = null;
@@ -58,8 +63,9 @@ export class FixtureEngine {
 
   private readonly onCrosshair: (pos: CrosshairPosition) => void;
 
-  constructor(patch: PatchData, onCrosshair: (pos: CrosshairPosition) => void) {
+  constructor(patch: PatchData, fixtureLibrary: FixtureLibrary, onCrosshair: (pos: CrosshairPosition) => void) {
     this.patch = patch;
+    this.fixtureLibrary = fixtureLibrary;
     this.onCrosshair = onCrosshair;
     this.sacnSender = new SacnSender({ priority: SACN_PRIORITY, useUnicastDestination: '127.0.0.1' });
     for (const id of Object.keys(patch)) {
@@ -76,6 +82,9 @@ export class FixtureEngine {
     this.patch = patch;
   }
 
+  updateFixtureLibrary(library: FixtureLibrary): void {
+    this.fixtureLibrary = library;
+  }
   setGamepadState(state: GamepadState): void {
     this.lastGamepadState = state;
   }
@@ -142,14 +151,29 @@ export class FixtureEngine {
       const payload = universePayloads.get(DMXUniverse);
       if (!payload) continue;
 
-      writePayload(payload, base, fixture.panChannels, state.panNorm);
-      writePayload(payload, base, fixture.tiltChannels, state.tiltNorm);
+      const profile = this.fixtureLibrary[fixture.fixtureTypeId];
+      const mode = profile?.modes[fixture.modeId];
+      if (!profile || !mode) {
+        console.warn(`FixtureEngine: unknown fixture profile "${fixture.fixtureTypeId}" / mode "${fixture.modeId}" for fixture ${id}`);
+        continue;
+      }
+      const channels = mode.channels;
 
-      const sizeChannels = fixture.sizeMode === 'zoom' ? fixture.zoomChannels : fixture.irisChannels;
-      writePayload(payload, base, sizeChannels, state.zoomNorm);
+      writeChannel(payload, base, findChannel(channels, 'pan'), findChannel(channels, 'pan-fine'), state.panNorm);
+      writeChannel(payload, base, findChannel(channels, 'tilt'), findChannel(channels, 'tilt-fine'), state.tiltNorm);
+      writeChannel(payload, base, findChannel(channels, 'zoom'), findChannel(channels, 'zoom-fine'), state.zoomNorm);
+      writeChannel(payload, base, findChannel(channels, 'iris'), findChannel(channels, 'iris-fine'), state.zoomNorm);
 
       const outputIntensity = state.intensity * (1 - gp.l2);
-      writePayload(payload, base, fixture.intensityChannels, outputIntensity);
+      writeChannel(payload, base, findChannel(channels, 'dimmer'), findChannel(channels, 'dimmer-fine'), outputIntensity);
+
+      if (fixture.standalone) {
+        for (const ch of channels) {
+          if (!MOTION_ROLES.includes(ch.role)) {
+            payload[base + ch.offset - 1] = ch.standaloneValue;
+          }
+        }
+      }
     }
 
     this.sacnSender.send(universePayloads);

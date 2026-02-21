@@ -21,7 +21,9 @@ contextBridge.exposeInMainWorld('api', {
       return () => ipcRenderer.removeListener('store:update', subscription);
     }
   },
-  control: {
+  fixtures: {
+    getLibrary: () => ipcRenderer.invoke('fixtures:getLibrary'),
+  },  control: {
     sendGamepadState: (state: GamepadState) => ipcRenderer.send('control:gamepadState', state),
     onCrosshair: (cb: (pos: CrosshairPosition) => void) => {
       const subscription = (_event: any, pos: CrosshairPosition) => cb(pos);
