@@ -1,0 +1,53 @@
+{
+  "rogue-r2x-wash": {
+    "manufacturer": "Chauvet Professional",
+    "model": "Rogue R2X Wash",
+    "type": "moving-head-wash",
+    "panRangeDegrees": 540,
+    "tiltRangeDegrees": 270,
+    "modes": {
+      "22CH": {
+        "channelCount": 22,
+        "channels": [
+          { "offset": 1,  "role": "pan",        "label": "Pan",            "defaultValue": 128, "standaloneValue": 128 },
+          { "offset": 2,  "role": "pan-fine",    "label": "Pan Fine",       "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 3,  "role": "tilt",        "label": "Tilt",           "defaultValue": 128, "standaloneValue": 128 },
+          { "offset": 4,  "role": "tilt-fine",   "label": "Tilt Fine",      "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 5,  "role": "other",       "label": "Pan/Tilt Speed", "defaultValue": 0,   "standaloneValue": 0,   "notes": "0=max speed, 255=min speed" },
+          { "offset": 6,  "role": "dimmer",      "label": "Dimmer",         "defaultValue": 0,   "standaloneValue": 255 },
+          { "offset": 7,  "role": "dimmer-fine", "label": "Dimmer Fine",    "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 8,  "role": "shutter",     "label": "Shutter/Strobe", "defaultValue": 0,   "standaloneValue": 22,  "notes": "0=closed, 22=open, 23-255=strobe" },
+          { "offset": 9,  "role": "red",         "label": "Red",            "defaultValue": 0,   "standaloneValue": 255 },
+          { "offset": 10, "role": "red-fine",    "label": "Red Fine",       "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 11, "role": "green",       "label": "Green",          "defaultValue": 0,   "standaloneValue": 255 },
+          { "offset": 12, "role": "green-fine",  "label": "Green Fine",     "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 13, "role": "blue",        "label": "Blue",           "defaultValue": 0,   "standaloneValue": 255 },
+          { "offset": 14, "role": "blue-fine",   "label": "Blue Fine",      "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 15, "role": "white",       "label": "White",          "defaultValue": 0,   "standaloneValue": 255 },
+          { "offset": 16, "role": "white-fine",  "label": "White Fine",     "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 17, "role": "other",       "label": "Color Macro",    "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 18, "role": "other",       "label": "Zone",           "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 19, "role": "other",       "label": "Programs",       "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 20, "role": "other",       "label": "Auto Speed",     "defaultValue": 0,   "standaloneValue": 0 },
+          { "offset": 21, "role": "zoom",        "label": "Zoom",           "defaultValue": 128, "standaloneValue": 128 },
+          { "offset": 22, "role": "other",       "label": "Control",        "defaultValue": 0,   "standaloneValue": 0 }
+        ]
+      }
+    }
+  },
+  "generic-dimmer": {
+    "manufacturer": "Generic",
+    "model": "Dimmer",
+    "type": "dimmer",
+    "panRangeDegrees": 0,
+    "tiltRangeDegrees": 0,
+    "modes": {
+      "1CH": {
+        "channelCount": 1,
+        "channels": [
+          { "offset": 1, "role": "dimmer", "label": "Intensity", "defaultValue": 0, "standaloneValue": 255 }
+        ]
+      }
+    }
+  }
+}
