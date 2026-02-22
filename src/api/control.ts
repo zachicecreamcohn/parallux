@@ -1,10 +1,20 @@
 import { ipcMain } from 'electron';
-import { GamepadState, CrosshairPosition } from '../shared/interfaces';
+import { GamepadState, CrosshairPosition, FixtureState } from '../shared/interfaces';
 import { FixtureEngine } from './FixtureEngine';
 
 export function setupControlHandlers(engine: FixtureEngine): void {
   ipcMain.on('control:gamepadState', (_event, state: GamepadState) => {
     engine.setGamepadState(state);
+  });
+  ipcMain.on('control:setCalibrationFixture', (_event, id: string | null) => {
+    engine.setCalibrationFixture(id);
+  });
+  ipcMain.on('control:setCalibrationTarget', (_event, target: { u: number; v: number } | null) => {
+    engine.setCalibrationTarget(target);
+  });
+
+  ipcMain.handle('control:getFixtureState', (_event, id: string): FixtureState | undefined => {
+    return engine.getFixtureState(id);
   });
 }
 

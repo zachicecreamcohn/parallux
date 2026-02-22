@@ -67,12 +67,12 @@ export interface ProjectData {
   projectName: string;
   patch: PatchData;
   stageSize?: StageSize;
-  gridOverlay?: GridOverlay;
+  gridOverlay?: GridOverlay;  calibrationData?: CalibrationData;
 
 
 }
 
-export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch', 'stageSize', 'gridOverlay'];
+export const ProjectDataKeys: (keyof ProjectData)[] = ['projectName', 'patch', 'stageSize', 'gridOverlay', 'calibrationData'];
 
 export type StoreUpdateEvent = {
   [K in keyof ProjectData]: { key: K; value: ProjectData[K] }
@@ -98,6 +98,16 @@ export interface FixtureState {
 
 }
 
+export interface CalibrationPoint {
+  u: number;
+  v: number;
+  panNorm: number;
+  tiltNorm: number;
+}
+
+export type CalibrationLUT = CalibrationPoint[];
+
+export type CalibrationData = Record<string, CalibrationLUT>;
 export interface CrosshairPosition {
   x: number;
   y: number;

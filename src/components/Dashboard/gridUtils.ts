@@ -35,11 +35,11 @@ export function defaultCorners(width: number, height: number, stageSize: StageSi
   };
 }
 
-function lerp(a: Point, b: Point, t: number): Point {
+export function lerp(a: Point, b: Point, t: number): Point {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
-function bilerp(tl: Point, tr: Point, bl: Point, br: Point, u: number, v: number): Point {
+export function bilerp(tl: Point, tr: Point, bl: Point, br: Point, u: number, v: number): Point {
   return lerp(lerp(tl, tr, u), lerp(bl, br, u), v);
 }
 
@@ -100,6 +100,28 @@ export function drawGrid(
 }
 
 
+export const CALIBRATION_GRID = 5;
+
+export interface CalibrationScreenPoint {
+  u: number;
+  v: number;
+  canvasX: number;
+  canvasY: number;
+}
+
+export function getCalibrationPoints(corners: GridOverlay, w: number, h: number): CalibrationScreenPoint[] {
+  const { topLeft: tl, topRight: tr, bottomLeft: bl, bottomRight: br } = corners;
+  const points: CalibrationScreenPoint[] = [];
+  for (let row = 0; row < CALIBRATION_GRID; row++) {
+    for (let col = 0; col < CALIBRATION_GRID; col++) {
+      const u = col / (CALIBRATION_GRID - 1);
+      const v = row / (CALIBRATION_GRID - 1);
+      const p = bilerp(tl, tr, bl, br, u, v);
+      points.push({ u, v, canvasX: p.x * w, canvasY: p.y * h });
+    }
+  }
+  return points;
+}
 export function hitTestCorner(
   ex: number, ey: number,
   corners: GridOverlay,

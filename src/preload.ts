@@ -2,7 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 
-import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition } from '@shared/interfaces';
+import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition, FixtureState } from '@shared/interfaces';
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
@@ -24,7 +24,8 @@ contextBridge.exposeInMainWorld('api', {
   fixtures: {
     getLibrary: () => ipcRenderer.invoke('fixtures:getLibrary'),
   },  control: {
-    sendGamepadState: (state: GamepadState) => ipcRenderer.send('control:gamepadState', state),
+    sendGamepadState: (state: GamepadState) => ipcRenderer.send('control:gamepadState', state),    setCalibrationFixture: (id: string | null) => ipcRenderer.send('control:setCalibrationFixture', id),    setCalibrationTarget: (target: { u: number; v: number } | null) => ipcRenderer.send('control:setCalibrationTarget', target),
+    getFixtureState: (id: string): Promise<FixtureState | undefined> => ipcRenderer.invoke('control:getFixtureState', id),
     onCrosshair: (cb: (pos: CrosshairPosition) => void) => {
       const subscription = (_event: any, pos: CrosshairPosition) => cb(pos);
       ipcRenderer.on('control:crosshair', subscription);

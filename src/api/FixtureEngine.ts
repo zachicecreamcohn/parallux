@@ -1,4 +1,4 @@
-import { PatchData, GamepadState, FixtureState, CrosshairPosition, FixtureLibrary, FixtureChannelDef, FixtureChannelRole } from '../shared/interfaces';
+import { PatchData, GamepadState, FixtureState, CrosshairPosition, FixtureLibrary, FixtureChannelDef, FixtureChannelRole, CalibrationData, CalibrationLUT } from '../shared/interfaces';
 import { SacnSender } from './SacnSender';
 
 
@@ -52,6 +52,45 @@ function writeChannel(payload: { [channel: number]: number }, base: number, ch: 
   }
 }
 
+/** Bilinear interpolation lookup in a 5×5 calibration LUT.
+ *  Given a crosshair position (u, v) in [0,1], finds the surrounding
+ *  4 calibration points and interpolates the pan/tilt DMX values. */
+function lookupLUT(lut: CalibrationLUT, u: number, v: number): { pan: number; tilt: number } | null {
+  if (lut.length === 0) return null;
+
+  // Determine grid size (assumes square grid)
+  const gridSize = Math.round(Math.sqrt(lut.length));
+  if (gridSize * gridSize !== lut.length) return null;
+
+  const maxIdx = gridSize - 1;
+  const col = u * maxIdx;
+  const row = v * maxIdx;
+
+  const col0 = Math.max(0, Math.min(maxIdx - 1, Math.floor(col)));
+  const row0 = Math.max(0, Math.min(maxIdx - 1, Math.floor(row)));
+  const col1 = col0 + 1;
+  const row1 = row0 + 1;
+
+  const s = col - col0;
+  const t = row - row0;
+
+  const tl = lut[row0 * gridSize + col0];
+  const tr = lut[row0 * gridSize + col1];
+  const bl = lut[row1 * gridSize + col0];
+  const br = lut[row1 * gridSize + col1];
+
+  if (!tl || !tr || !bl || !br) return null;
+
+  const topPan = tl.panNorm + (tr.panNorm - tl.panNorm) * s;
+  const botPan = bl.panNorm + (br.panNorm - bl.panNorm) * s;
+  const pan = topPan + (botPan - topPan) * t;
+
+  const topTilt = tl.tiltNorm + (tr.tiltNorm - tl.tiltNorm) * s;
+  const botTilt = bl.tiltNorm + (br.tiltNorm - bl.tiltNorm) * s;
+  const tilt = topTilt + (botTilt - topTilt) * t;
+
+  return { pan, tilt };
+}
 export class FixtureEngine {
   private states = new Map<string, FixtureState>();
   private patch: PatchData;
@@ -62,6 +101,10 @@ export class FixtureEngine {
   private readonly sacnSender: SacnSender;
 
   private readonly onCrosshair: (pos: CrosshairPosition) => void;
+  private calibrationFixtureId: string | null = null;
+  private calibrationData: CalibrationData = {};
+  private crosshairPos = { x: 0.5, y: 0.5 };
+  private calibrationTarget: { u: number; v: number } | null = null;
 
   constructor(patch: PatchData, fixtureLibrary: FixtureLibrary, onCrosshair: (pos: CrosshairPosition) => void) {
     this.patch = patch;
@@ -85,8 +128,23 @@ export class FixtureEngine {
   updateFixtureLibrary(library: FixtureLibrary): void {
     this.fixtureLibrary = library;
   }
+  updateCalibrationData(data: CalibrationData): void {
+    this.calibrationData = data;
+  }
   setGamepadState(state: GamepadState): void {
     this.lastGamepadState = state;
+  }
+  setCalibrationFixture(id: string | null): void {
+    this.calibrationFixtureId = id;
+    if (!id) this.calibrationTarget = null;
+  }
+
+  setCalibrationTarget(target: { u: number; v: number } | null): void {
+    this.calibrationTarget = target;
+  }
+
+  getFixtureState(id: string): FixtureState | undefined {
+    return this.states.get(id);
   }
 
 
@@ -107,19 +165,32 @@ export class FixtureEngine {
   private tick(): void {
     const gp = this.lastGamepadState;
 
+    // Update shared crosshair position (stage target)
+    if (gp.r2 >= CLUTCH_THRESHOLD && !this.calibrationFixtureId) {
+      this.crosshairPos.x = clamp(this.crosshairPos.x + curve(gp.rightStickX) * DELTA_SCALE);
+      this.crosshairPos.y = clamp(this.crosshairPos.y + curve(gp.rightStickY) * DELTA_SCALE);
+    }
+
     for (const [id, state] of this.states) {
-      if (gp.r2 < CLUTCH_THRESHOLD) {
-        this.states.set(id, state);
+      if (this.calibrationFixtureId && id !== this.calibrationFixtureId) {
         continue;
       }
 
-      state.panNorm = clamp(state.panNorm + curve(gp.rightStickX) * DELTA_SCALE);
-      state.tiltNorm = clamp(state.tiltNorm + curve(gp.rightStickY) * DELTA_SCALE);
-      state.zoomNorm = clamp(state.zoomNorm + curve(gp.leftStickY) * DELTA_SCALE);
+      // During calibration: direct joystick control of this fixture's raw pan/tilt
+      if (this.calibrationFixtureId) {
+        if (gp.r2 >= CLUTCH_THRESHOLD) {
+          state.panNorm = clamp(state.panNorm + curve(gp.rightStickX) * DELTA_SCALE);
+          state.tiltNorm = clamp(state.tiltNorm + curve(gp.rightStickY) * DELTA_SCALE);
+          state.zoomNorm = clamp(state.zoomNorm + curve(gp.leftStickY) * DELTA_SCALE);
+        }
+      } else if (gp.r2 >= CLUTCH_THRESHOLD) {
+        // Normal mode: zoom still per-fixture
+        state.zoomNorm = clamp(state.zoomNorm + curve(gp.leftStickY) * DELTA_SCALE);
+      }
 
-      if (gp.aButton) {
+      if (gp.aButton && !this.calibrationFixtureId) {
         state.intensity = 1.0;
-      } else if (gp.bButton) {
+      } else if (gp.bButton && !this.calibrationFixtureId) {
         state.intensity = 0.0;
       } else if (gp.dpadUp) {
         state.intensity = clamp(state.intensity + DPAD_STEP);
@@ -130,11 +201,10 @@ export class FixtureEngine {
       this.states.set(id, state);
     }
 
-    const fixtureList = [...this.states.values()];
-    if (fixtureList.length > 0) {
-      const meanPan = fixtureList.reduce((s, f) => s + f.panNorm, 0) / fixtureList.length;
-      const meanTilt = fixtureList.reduce((s, f) => s + f.tiltNorm, 0) / fixtureList.length;
-      this.onCrosshair({ x: meanPan, y: meanTilt });
+    if (this.calibrationFixtureId && this.calibrationTarget) {
+      this.onCrosshair({ x: this.calibrationTarget.u, y: this.calibrationTarget.v });
+    } else if (!this.calibrationFixtureId) {
+      this.onCrosshair({ x: this.crosshairPos.x, y: this.crosshairPos.y });
     }
 
     const universePayloads = new Map<number, { [channel: number]: number }>();
@@ -158,8 +228,27 @@ export class FixtureEngine {
       }
       const channels = mode.channels;
 
-      writeChannel(payload, base, findChannel(channels, 'pan'), findChannel(channels, 'pan-fine'), state.panNorm);
-      writeChannel(payload, base, findChannel(channels, 'tilt'), findChannel(channels, 'tilt-fine'), state.tiltNorm);
+      // Determine pan/tilt: use LUT if available (and not calibrating), else raw
+      let dmxPan = state.panNorm;
+      let dmxTilt = state.tiltNorm;
+
+      if (!this.calibrationFixtureId) {
+        const lut = this.calibrationData[id];
+        if (lut && lut.length > 0) {
+          const mapped = lookupLUT(lut, this.crosshairPos.x, this.crosshairPos.y);
+          if (mapped) {
+            dmxPan = mapped.pan;
+            dmxTilt = mapped.tilt;
+          }
+        } else {
+          // No LUT: use crosshair position directly as pan/tilt
+          dmxPan = this.crosshairPos.x;
+          dmxTilt = this.crosshairPos.y;
+        }
+      }
+
+      writeChannel(payload, base, findChannel(channels, 'pan'), findChannel(channels, 'pan-fine'), dmxPan);
+      writeChannel(payload, base, findChannel(channels, 'tilt'), findChannel(channels, 'tilt-fine'), dmxTilt);
       writeChannel(payload, base, findChannel(channels, 'zoom'), findChannel(channels, 'zoom-fine'), state.zoomNorm);
       writeChannel(payload, base, findChannel(channels, 'iris'), findChannel(channels, 'iris-fine'), state.zoomNorm);
 
@@ -174,7 +263,6 @@ export class FixtureEngine {
         }
       }
     }
-
 
     this.sacnSender.send(universePayloads);
   }

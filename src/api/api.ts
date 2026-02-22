@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { setupStoreHandlers, getStoreValue, onStoreChange } from './store';
 import { FixtureEngine } from './FixtureEngine';
 import { setupControlHandlers, makeOnCrosshair } from './control';
-import { FixtureLibrary } from '../shared/interfaces';
+import { CalibrationData, FixtureLibrary } from '../shared/interfaces';
 import fixtureLibrary from '../../src/fixtures.json';
 
 let engine: FixtureEngine | null = null;
@@ -19,6 +19,12 @@ export function registerApi(win: BrowserWindow): void {
 
   onStoreChange('patch', (newPatch) => {
     engine?.updatePatch(newPatch ?? {});
+  });
+  const calibrationData = getStoreValue('calibrationData') ?? {};
+  engine.updateCalibrationData(calibrationData as CalibrationData);
+
+  onStoreChange('calibrationData', (newData) => {
+    engine?.updateCalibrationData((newData ?? {}) as CalibrationData);
   });
 
   setupControlHandlers(engine);

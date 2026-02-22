@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Select, Text } from '@mantine/core';
 import { CrosshairPosition, GridOverlay, Point, StageSize } from '../../shared/interfaces';
 import { useStore } from '../../context/StoreContext';
-import { defaultCorners, drawGrid, gridDivisions, hitTestCorner } from './gridUtils';
+import { bilerp, defaultCorners, drawGrid, getCalibrationPoints, gridDivisions, hitTestCorner, CalibrationScreenPoint } from './gridUtils';
+import CalibrationOverlay from './CalibrationOverlay';
 
 function useCameras() {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -17,9 +18,12 @@ function useCameras() {
 interface Props {
   stageSize: StageSize;
   crosshair?: CrosshairPosition;
+  calibrationPoint?: { canvasX: number; canvasY: number } | null;
+  calibrationProgress?: string;
+  onCalibrationPointsReady?: (points: CalibrationScreenPoint[]) => void;
 }
 
-export default function CameraFeed({ stageSize, crosshair }: Props) {
+export default function CameraFeed({ stageSize, crosshair, calibrationPoint, calibrationProgress, onCalibrationPointsReady }: Props) {
   const cameras = useCameras();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -78,14 +82,23 @@ export default function CameraFeed({ stageSize, crosshair }: Props) {
   }, [gridOverlay, videoDims, stageSize, selectedCorner]);
 
   useEffect(() => {
+    if (!onCalibrationPointsReady) return;
+    const corners = getCorners();
+    const points = getCalibrationPoints(corners, videoDims.w, videoDims.h);
+    onCalibrationPointsReady(points);
+  }, [gridOverlay, videoDims, onCalibrationPointsReady]);
+
+  useEffect(() => {
     const canvas = crosshairCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!crosshair) return;
-    const cx = crosshair.x * videoDims.w;
-    const cy = crosshair.y * videoDims.h;
+    const corners = getCorners();
+    const mapped = bilerp(corners.topLeft, corners.topRight, corners.bottomLeft, corners.bottomRight, crosshair.x, crosshair.y);
+    const cx = mapped.x * videoDims.w;
+    const cy = mapped.y * videoDims.h;
     const R = 12;
     const L = 20;
     ctx.save();
@@ -232,6 +245,12 @@ export default function CameraFeed({ stageSize, crosshair }: Props) {
             width: '100%', height: '100%',
             pointerEvents: 'none',
           }}
+        />
+        <CalibrationOverlay
+          width={videoDims.w}
+          height={videoDims.h}
+          currentPoint={calibrationPoint ?? null}
+          progress={calibrationProgress ?? ''}
         />
       </div>
     </>

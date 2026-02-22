@@ -1,4 +1,4 @@
-import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition, FixtureLibrary } from "./shared/interfaces";
+import { ProjectData, StoreUpdateEvent, GamepadState, CrosshairPosition, FixtureLibrary, FixtureState } from "./shared/interfaces";
 
 export interface IApi {
   store: {
@@ -12,6 +12,8 @@ export interface IApi {
     getLibrary: () => Promise<FixtureLibrary>;
   };  control: {
     sendGamepadState: (state: GamepadState) => void;
+    setCalibrationFixture: (id: string | null) => void;    setCalibrationTarget: (target: { u: number; v: number } | null) => void;
+    getFixtureState: (id: string) => Promise<FixtureState | undefined>;
     onCrosshair: (cb: (pos: CrosshairPosition) => void) => () => void;
   };
 }

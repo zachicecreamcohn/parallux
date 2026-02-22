@@ -18,6 +18,9 @@ const storeSchema: Schema<ProjectData> = {
   gridOverlay: {
     type: 'object',
     default: {}
+  },  calibrationData: {
+    type: 'object',
+    default: {}
   },
 
 
