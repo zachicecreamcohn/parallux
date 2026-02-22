@@ -227,14 +227,14 @@ const [gridVerticalOffset, setGridVerticalOffset] = useState(0);
         />
       )}
 
-      <div style={{ position: 'relative', display: 'inline-block' }}>
+      <div style={{ position: 'relative', width: '100%' }}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           onLoadedMetadata={handleVideoMetadata}
-          style={{ display: 'block', maxWidth: '100%', background: '#000' }}
+          style={{ display: 'block', width: '100%', background: '#000' }}
         />
         <canvas
           ref={canvasRef}
