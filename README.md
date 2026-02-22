@@ -4,6 +4,7 @@ Parallux is an open source remote followspot system which lets you use moving li
 
 It is meant as an alternative to expensive automated systems like [Follow-Me](https://follow-me.com/) or [ZacTrack](https://www.zactrack.com/) and manual remote systems like [RoboSpot](https://www.robeuk.com/robospot).
 
+<video src="Calibration Demo.mp4" controls width="720"></video>
 ## How It Works
 
 A camera pointed at the stage feeds into the app. The operator overlays a perspective grid on the camera feed to define the stage area, then calibrates each fixture by aiming its beam at 25 grid points. This builds a lookup table that maps screen positions to DMX pan/tilt values. This let's us control multiple fixtures of different types and positions with a single crosshair over the video feed.
