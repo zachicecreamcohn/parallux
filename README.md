@@ -12,20 +12,33 @@ During a show, the operator uses a gaming controller to move a crosshair over th
 
 ## Controls
 
-- **R2 (clutch):** Hold to move the crosshair. Zoom and pan/tilt will not work unless this is held (to prevent accientally nudging it)
-- **Right stick:** focus position
-- **Left stick Y:** beam size (iris or zoom, depending on the fixture capabilities)
-- **L2:** Momentary blackout while held down. Release to return to previous intensity.
-- **D-pad up/down:** Gradual intensity adjustment
-- **A / B buttons:** Instant full on / full off
+| Control | Function |
+|---|---|
+| R2 (clutch) | Hold to move the crosshair. Zoom and pan/tilt will not work unless this is held (to prevent accidentally nudging it). |
+| Right stick | Focus position |
+| Left stick Y | Beam size (iris or zoom, depending on the fixture capabilities) |
+| L2 | Momentary blackout while held down. Release to return to previous intensity. |
+| D-pad up/down | Gradual intensity adjustment |
+| A button | Instant full on |
+| B button | Instant full off |
 
 ## Setup
 
-1. **Settings page:** Patch your fixtures (DMX address, universe, fixture profile) and enter stage dimensions. Fixture profiles are defined in `src/fixtures.json`. Currently, only the Chauvet R2X Wash is included, but it's easy to add more.
-2. **Dashboard:** Select your camera, input the dimensions of the stage. The grid which appears will then have the correct aspect ratio. then drag the 4 grid corners to match the stage edges on the video feed.
-3. **Calibrate:** Click Calibrate, pick a fixture. A dot appears at each of 25 grid intersections — aim the light at each dot using the gamepad, press A to save and advance. Repeat for each fixture.
-    - Tip: It's easier to focus to people-height. Use the vertical offset slider to change the y position of the mapped grid so it intersects with the ideal focus position (e.g. chest height).
-4. **Operate:** The crosshair now accurately tracks all calibrated fixtures simultaneously. Point the crosshairs and your lights will follow!
+#### 1. Settings page
+Patch your fixtures (DMX address, universe, fixture profile) and enter stage dimensions. Fixture profiles are defined in `src/fixtures.json`. Currently, only the Chauvet R2X Wash is included, but it's easy to add more.
+
+#### 2. Dashboard
+Select your camera, input the dimensions of the stage. The grid which appears will then have the correct aspect ratio. Then drag the 4 grid corners to match the stage edges on the video feed.
+
+#### 3. Calibrate
+Click Calibrate, pick a fixture. A dot appears at each of 25 grid intersections — aim the light at each dot using the gamepad, press A to save and advance. Repeat for each fixture.
+
+> ![NOTE]
+> It's easier to focus to people-height. Use the vertical offset slider to change the y position of the mapped grid so it intersects with the ideal focus position (e.g. chest height).
+
+
+#### 4. Operate
+The crosshair now accurately tracks all calibrated fixtures simultaneously. Point the crosshairs and your lights will follow!
 
 ## sACN Integration
 
