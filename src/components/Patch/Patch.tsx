@@ -1,94 +1,50 @@
-import { useState, useCallback, memo } from 'react';
-import { Table, NumberInput, TextInput, Button, ActionIcon, Title, Group, Tooltip, Select } from '@mantine/core';
-import { IconTrash, IconAlertCircle, IconInfoCircle } from '@tabler/icons-react';
-import { FixturePatch, SizeMode } from '../../shared/interfaces';
+import { useState, useCallback, memo, useEffect } from 'react';
+import { Table, NumberInput, Button, ActionIcon, Title, Group, Tooltip, Select, Checkbox } from '@mantine/core';
+import { IconTrash, IconAlertCircle } from '@tabler/icons-react';
+import { FixturePatch, FixtureLibrary } from '../../shared/interfaces';
 import { useStore } from '../../context/StoreContext';
-
-// --- 1. Configuration ---
-
-const PARAM_COLUMNS = [
-  { key: 'panChannels', label: 'Pan', width: 90 },
-  { key: 'tiltChannels', label: 'Tilt', width: 90 },
-  { key: 'zoomChannels', label: 'Zoom', width: 90 },
-  { key: 'irisChannels', label: 'Iris', width: 90 },
-  { key: 'intensityChannels', label: 'Intensity', width: 90 },
-] as const;
-
-type ChannelKey = typeof PARAM_COLUMNS[number]['key'];
 
 const DMX_UNIVERSE_MAX = 63;
 const DMX_ADDRESS_MAX = 512;
-const TOOLTIP_TEXT = "DMX offset channels within the fixture profile (e.g. '1,2' for 16-bit)";
-
-// --- 2. Helpers ---
-
-function parseChannels(val: string): number[] {
-  return val
-    .split(',')
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n) && n > 0);
-}
-
-function channelsToString(channels: number[]): string {
-  return channels.join(', ');
-}
 
 function newFixture(): FixturePatch {
   return {
     channel: 1,
     DMXUniverse: 1,
     DMXAddress: 1,
-    panChannels: [],
-    tiltChannels: [],
-    zoomChannels: [],
-    irisChannels: [],
-    intensityChannels: [],
-    sizeMode: 'zoom',
+    fixtureTypeId: '',
+    modeId: '',
+    standalone: false,
   };
 }
-
-// --- 3. Atom Components ---
-
-const ChannelInput = memo(({ value, onChange }: { value: number[]; onChange: (v: number[]) => void }) => {
-  const [localValue, setLocalValue] = useState(channelsToString(value));
-
-  const handleChange = (str: string) => {
-    if (/^[0-9,\s]*$/.test(str)) {
-      setLocalValue(str);
-    }
-  };
-
-  const handleBlur = () => {
-    const parsed = parseChannels(localValue);
-    onChange(parsed);
-    setLocalValue(channelsToString(parsed));
-  };
-
-  return (
-    <TextInput
-      variant="unstyled"
-      value={localValue}
-      onChange={(e) => handleChange(e.target.value)}
-      onBlur={handleBlur}
-      placeholder="-"
-      styles={{ input: { padding: '8px', fontSize: '14px' } }}
-    />
-  );
-});
 
 const FixtureRow = memo(({
   id,
   fixture,
+  fixtureLibrary,
   onUpdate,
   onDelete,
 }: {
   id: string;
   fixture: FixturePatch;
+  fixtureLibrary: FixtureLibrary;
   onUpdate: (id: string, patch: Partial<FixturePatch>) => void;
   onDelete: (id: string) => void;
 }) => {
   const universeValid = fixture.DMXUniverse >= 1 && fixture.DMXUniverse <= DMX_UNIVERSE_MAX;
   const addressValid = fixture.DMXAddress >= 1 && fixture.DMXAddress <= DMX_ADDRESS_MAX;
+
+  const fixtureTypeData = Object.entries(fixtureLibrary).map(([value, profile]) => ({
+    value,
+    label: `${profile.manufacturer} ${profile.model}`,
+  }));
+
+  const selectedProfile = fixture.fixtureTypeId ? fixtureLibrary[fixture.fixtureTypeId] : undefined;
+  const fixtureTypeUnknown = fixture.fixtureTypeId && !selectedProfile;
+
+  const modeData = selectedProfile
+    ? Object.keys(selectedProfile.modes).map((m) => ({ value: m, label: m }))
+    : [];
 
   return (
     <Table.Tr>
@@ -142,25 +98,38 @@ const FixtureRow = memo(({
         />
       </Table.Td>
 
-      {PARAM_COLUMNS.map((col) => (
-        <Table.Td p={0} key={col.key}>
-          <ChannelInput
-            value={fixture[col.key as ChannelKey]}
-            onChange={(val) => onUpdate(id, { [col.key]: val })}
-          />
-        </Table.Td>
-      ))}
+      <Table.Td p={0}>
+        <Select
+          variant="unstyled"
+          value={fixture.fixtureTypeId || null}
+          onChange={(val) => onUpdate(id, { fixtureTypeId: val ?? '', modeId: '' })}
+          data={fixtureTypeData}
+          placeholder="Select fixture..."
+          styles={{ input: { padding: '8px' } }}
+          rightSection={fixtureTypeUnknown && (
+            <Tooltip label={`Unknown fixture type: ${fixture.fixtureTypeId}`} position="top" withArrow>
+              <IconAlertCircle size={16} color="var(--mantine-color-red-filled)" style={{ cursor: 'help' }} />
+            </Tooltip>
+          )}
+        />
+      </Table.Td>
 
       <Table.Td p={0}>
         <Select
           variant="unstyled"
-          value={fixture.sizeMode}
-          onChange={(val) => onUpdate(id, { sizeMode: val as SizeMode })}
-          data={[
-            { value: 'zoom', label: 'Zoom' },
-            { value: 'iris', label: 'Iris' },
-          ]}
+          value={fixture.modeId || null}
+          onChange={(val) => onUpdate(id, { modeId: val ?? '' })}
+          data={modeData}
+          placeholder="Mode..."
+          disabled={!selectedProfile}
           styles={{ input: { padding: '8px' } }}
+        />
+      </Table.Td>
+
+      <Table.Td align="center">
+        <Checkbox
+          checked={fixture.standalone}
+          onChange={(e) => onUpdate(id, { standalone: e.currentTarget.checked })}
         />
       </Table.Td>
 
@@ -173,11 +142,14 @@ const FixtureRow = memo(({
   );
 });
 
-// --- 4. Main Component ---
-
 export default function Patch() {
   const [patch, setPatch] = useStore('patch');
+  const [fixtureLibrary, setFixtureLibrary] = useState<FixtureLibrary>({});
   const rows = patch ?? {};
+
+  useEffect(() => {
+    window.api.fixtures.getLibrary().then(setFixtureLibrary);
+  }, []);
 
   const addFixture = useCallback(() => {
     const id = `fixture-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -207,25 +179,9 @@ export default function Patch() {
             <Table.Th w={80}>Ch #</Table.Th>
             <Table.Th w={90}>Universe</Table.Th>
             <Table.Th w={90}>Address</Table.Th>
-
-            {PARAM_COLUMNS.map((col) => (
-              <Table.Th w={col.width} key={col.key}>
-                <Group gap={4} wrap="nowrap">
-                  {col.label}
-                  <Tooltip
-                    label={TOOLTIP_TEXT}
-                    multiline
-                    w={220}
-                    withArrow
-                    events={{ hover: true, focus: true, touch: true }}
-                  >
-                    <IconInfoCircle size={14} style={{ cursor: 'help', opacity: 0.5 }} />
-                  </Tooltip>
-                </Group>
-              </Table.Th>
-            ))}
-
-            <Table.Th w={100}>Size Mode</Table.Th>
+            <Table.Th w={220}>Fixture Type</Table.Th>
+            <Table.Th w={100}>Mode</Table.Th>
+            <Table.Th w={100}>Standalone</Table.Th>
             <Table.Th w={50} />
           </Table.Tr>
         </Table.Thead>
@@ -233,7 +189,7 @@ export default function Patch() {
         <Table.Tbody>
           {Object.keys(rows).length === 0 ? (
             <Table.Tr>
-              <Table.Td colSpan={PARAM_COLUMNS.length + 5} align="center" c="dimmed" py="xl">
+              <Table.Td colSpan={7} align="center" c="dimmed" py="xl">
                 No fixtures patched. Click "Add Fixture" to start.
               </Table.Td>
             </Table.Tr>
@@ -243,6 +199,7 @@ export default function Patch() {
                 key={id}
                 id={id}
                 fixture={fixture}
+                fixtureLibrary={fixtureLibrary}
                 onUpdate={updateFixture}
                 onDelete={deleteFixture}
               />

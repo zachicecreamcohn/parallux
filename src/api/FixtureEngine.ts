@@ -144,7 +144,7 @@ export class FixtureEngine {
       if (!fixture) continue;
 
       const { DMXUniverse, DMXAddress } = fixture;
-      const base = DMXAddress - 1;
+      const base = DMXAddress;
       if (!universePayloads.has(DMXUniverse)) {
         universePayloads.set(DMXUniverse, {});
       }
@@ -154,7 +154,6 @@ export class FixtureEngine {
       const profile = this.fixtureLibrary[fixture.fixtureTypeId];
       const mode = profile?.modes[fixture.modeId];
       if (!profile || !mode) {
-        console.warn(`FixtureEngine: unknown fixture profile "${fixture.fixtureTypeId}" / mode "${fixture.modeId}" for fixture ${id}`);
         continue;
       }
       const channels = mode.channels;
@@ -175,6 +174,7 @@ export class FixtureEngine {
         }
       }
     }
+
 
     this.sacnSender.send(universePayloads);
   }

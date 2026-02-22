@@ -23,7 +23,20 @@ const storeSchema: Schema<ProjectData> = {
 
 }
 
-const store = new Store<ProjectData>({ schema: storeSchema});
+const store = new Store<ProjectData>({ schema: storeSchema });
+
+// Migrate stale patch entries that predate the fixture profile schema
+const rawPatch = store.get('patch') as Record<string, unknown>;
+const migratedPatch: Record<string, unknown> = {};
+for (const [id, fixture] of Object.entries(rawPatch)) {
+  const f = fixture as Record<string, unknown>;
+  if (f.fixtureTypeId !== undefined && f.modeId !== undefined) {
+    migratedPatch[id] = fixture;
+  }
+}
+if (Object.keys(migratedPatch).length !== Object.keys(rawPatch).length) {
+  store.set('patch', migratedPatch);
+}
 
 
 export function getStoreValue<K extends keyof ProjectData>(key: K): ProjectData[K] {
