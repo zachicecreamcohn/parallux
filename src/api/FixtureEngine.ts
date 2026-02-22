@@ -3,10 +3,11 @@ import { SacnSender } from './SacnSender';
 
 
 const TICK_MS = 25;
-const DELTA_SCALE = 0.005;
-const DPAD_STEP = 0.031
+const DELTA_SCALE = 0.015;
+const DPAD_STEP = 0.008
 const CLUTCH_THRESHOLD = 0.1;
 
+const KILL_FADE_RATE = 1 / (0.15 / (TICK_MS / 1000));
 const SACN_PRIORITY = 150;
 
 const DEFAULT_STATE: FixtureState = {
@@ -105,6 +106,7 @@ export class FixtureEngine {
   private calibrationData: CalibrationData = {};
   private crosshairPos = { x: 0.5, y: 0.5 };
   private calibrationTarget: { u: number; v: number } | null = null;
+  private killFade = 1.0;
 
   constructor(patch: PatchData, fixtureLibrary: FixtureLibrary, onCrosshair: (pos: CrosshairPosition) => void) {
     this.patch = patch;
@@ -165,6 +167,12 @@ export class FixtureEngine {
   private tick(): void {
     const gp = this.lastGamepadState;
 
+    // Ramp kill fade: L2 pressed → fade toward 0, released → fade toward 1
+    if (gp.l2 >= CLUTCH_THRESHOLD) {
+      this.killFade = clamp(this.killFade - KILL_FADE_RATE);
+    } else {
+      this.killFade = clamp(this.killFade + KILL_FADE_RATE);
+    }
     // Update shared crosshair position (stage target)
     if (gp.r2 >= CLUTCH_THRESHOLD && !this.calibrationFixtureId) {
       this.crosshairPos.x = clamp(this.crosshairPos.x + curve(gp.rightStickX) * DELTA_SCALE);
@@ -253,7 +261,7 @@ export class FixtureEngine {
       writeChannel(payload, base, findChannel(channels, 'iris'), findChannel(channels, 'iris-fine'), state.zoomNorm);
 
       const isCalibrationOther = this.calibrationFixtureId && id !== this.calibrationFixtureId;
-      const outputIntensity = isCalibrationOther ? 0 : state.intensity * (1 - gp.l2);
+      const outputIntensity = isCalibrationOther ? 0 : state.intensity * this.killFade;
       writeChannel(payload, base, findChannel(channels, 'dimmer'), findChannel(channels, 'dimmer-fine'), outputIntensity);
 
       if (fixture.standalone) {
