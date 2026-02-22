@@ -44,14 +44,14 @@ The crosshair now accurately tracks all calibrated fixtures simultaneously. Poin
 
 The app outputs sACN at priority 150. A house console running at priority 100 can control color, gobos, beam sharpness, and other attributes while the app handles position. In standalone mode, the app controls all channels.
 
-## Future Work
+## TODOs
 
-- Per-project files (multiple shows)
-- Import patch from EOS
-- Per-fixture beam size indicator on the crosshair
-- Fixture parking (lock individual fixtures while tracking with others)
-- Color control in standalone mode
-- Configurable sACN destination IP
-- Intensity indicator
-- UI improvments (dark mode, full-screen video, actual design ideas)
-- IP camera support. Right now, we just support identified camera input. But ideally we can use networked cameras to plug directly into an existing FOH feed
+- [ ] Per-project files (multiple shows)
+- [ ] Import patch from EOS
+- [ ] Per-fixture beam size indicator on the crosshair
+- [ ] Fixture parking (lock individual fixtures while tracking with others)
+- [ ] Color control in standalone mode
+- [ ] Configurable sACN destination IP
+- [ ] Intensity indicator
+- [ ] UI improvments (dark mode, full-screen video, actual design ideas)
+- [ ] IP camera support. Right now, we just support identified camera input. But ideally we can use networked cameras to plug directly into an existing FOH feed
