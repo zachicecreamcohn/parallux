@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Group, Select, Slider, Text } from '@mantine/core';
+import { Group, Select, Slider, Switch, Text } from '@mantine/core';
 import { CrosshairPosition, GridOverlay, Point, StageSize } from '../../shared/interfaces';
 import { useStore } from '../../context/StoreContext';
 import { bilerp, defaultCorners, drawGrid, getCalibrationPoints, gridDivisions, hitTestCorner, CalibrationScreenPoint } from './gridUtils';
@@ -34,7 +34,8 @@ export default function CameraFeed({ stageSize, crosshair, calibrationPoint, cal
 
   const [gridOverlay, setGridOverlay] = useStore('gridOverlay');
 
-  const [gridVerticalOffset, setGridVerticalOffset] = useState(0);
+  const [showGrid, setShowGrid] = useState(true);
+const [gridVerticalOffset, setGridVerticalOffset] = useState(0);
 
   const handleVerticalOffsetChange = (value: number) => {
     const corners = getCorners();
@@ -91,9 +92,10 @@ export default function CameraFeed({ stageSize, crosshair, calibrationPoint, cal
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    if (!showGrid) { ctx.clearRect(0, 0, videoDims.w, videoDims.h); return; }
     const { cols, rows } = gridDivisions(stageSize);
     drawGrid(ctx, getCorners(), videoDims.w, videoDims.h, cols, rows, selectedCorner);
-  }, [gridOverlay, videoDims, stageSize, selectedCorner]);
+  }, [gridOverlay, videoDims, stageSize, selectedCorner, showGrid]);
 
   useEffect(() => {
     if (!onCalibrationPointsReady) return;
@@ -268,6 +270,12 @@ export default function CameraFeed({ stageSize, crosshair, calibrationPoint, cal
         />
       </div>
 
+      <Switch
+        label="Show grid"
+        checked={showGrid}
+        onChange={(e) => setShowGrid(e.currentTarget.checked)}
+        mt="xs"
+      />
       <Group align="center" gap="sm" mt="xs" style={{ maxWidth: 500 }}>
         <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>Grid Vertical Offset</Text>
         <Slider
