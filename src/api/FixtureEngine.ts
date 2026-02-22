@@ -7,7 +7,7 @@ const DELTA_SCALE = 0.015;
 const DPAD_STEP = 0.008
 const CLUTCH_THRESHOLD = 0.1;
 
-const KILL_FADE_RATE = 1 / (0.15 / (TICK_MS / 1000));
+const KILL_FADE_RATE = 1 / (0.2 / (TICK_MS / 1000));
 const SACN_PRIORITY = 150;
 
 const DEFAULT_STATE: FixtureState = {
