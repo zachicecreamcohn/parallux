@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Select, Text } from '@mantine/core';
+import { Group, Select, Slider, Text } from '@mantine/core';
 import { CrosshairPosition, GridOverlay, Point, StageSize } from '../../shared/interfaces';
 import { useStore } from '../../context/StoreContext';
 import { bilerp, defaultCorners, drawGrid, getCalibrationPoints, gridDivisions, hitTestCorner, CalibrationScreenPoint } from './gridUtils';
@@ -34,6 +34,20 @@ export default function CameraFeed({ stageSize, crosshair, calibrationPoint, cal
 
   const [gridOverlay, setGridOverlay] = useStore('gridOverlay');
 
+  const [gridVerticalOffset, setGridVerticalOffset] = useState(0);
+
+  const handleVerticalOffsetChange = (value: number) => {
+    const corners = getCorners();
+    const delta = value - gridVerticalOffset;
+    const shifted: GridOverlay = {
+      topLeft: { ...corners.topLeft, y: corners.topLeft.y + delta },
+      topRight: { ...corners.topRight, y: corners.topRight.y + delta },
+      bottomLeft: { ...corners.bottomLeft, y: corners.bottomLeft.y + delta },
+      bottomRight: { ...corners.bottomRight, y: corners.bottomRight.y + delta },
+    };
+    setGridVerticalOffset(value);
+    setGridOverlay(shifted);
+  };
   const draggingCorner = useRef<keyof GridOverlay | null>(null);
   const pendingCorners = useRef<GridOverlay | null>(null);
   const [selectedCorner, setSelectedCorner] = useState<keyof GridOverlay | null>(null);
@@ -253,6 +267,19 @@ export default function CameraFeed({ stageSize, crosshair, calibrationPoint, cal
           progress={calibrationProgress ?? ''}
         />
       </div>
+
+      <Group align="center" gap="sm" mt="xs" style={{ maxWidth: 500 }}>
+        <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>Grid Vertical Offset</Text>
+        <Slider
+          min={-0.5}
+          max={0.5}
+          step={0.005}
+          value={gridVerticalOffset}
+          onChange={handleVerticalOffsetChange}
+          style={{ flex: 1 }}
+          label={(v) => `${(v * 100).toFixed(1)}%`}
+        />
+      </Group>
     </>
   );
 }

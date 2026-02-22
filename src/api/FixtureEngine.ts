@@ -252,7 +252,8 @@ export class FixtureEngine {
       writeChannel(payload, base, findChannel(channels, 'zoom'), findChannel(channels, 'zoom-fine'), state.zoomNorm);
       writeChannel(payload, base, findChannel(channels, 'iris'), findChannel(channels, 'iris-fine'), state.zoomNorm);
 
-      const outputIntensity = state.intensity * (1 - gp.l2);
+      const isCalibrationOther = this.calibrationFixtureId && id !== this.calibrationFixtureId;
+      const outputIntensity = isCalibrationOther ? 0 : state.intensity * (1 - gp.l2);
       writeChannel(payload, base, findChannel(channels, 'dimmer'), findChannel(channels, 'dimmer-fine'), outputIntensity);
 
       if (fixture.standalone) {
