@@ -33,7 +33,7 @@ Select your camera, input the dimensions of the stage. The grid which appears wi
 #### 3. Calibrate
 Click Calibrate, pick a fixture. A dot appears at each of 25 grid intersections — aim the light at each dot using the gamepad, press A to save and advance. Repeat for each fixture.
 
-> ![NOTE]
+> [!NOTE]
 > It's easier to focus to people-height. Use the vertical offset slider to change the y position of the mapped grid so it intersects with the ideal focus position (e.g. chest height).
 
 
